@@ -2,6 +2,7 @@ package naming;
 
 import storage.Storage;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,7 +11,6 @@ public class DirectoryTreeNode {
     private HashMap<String, DirectoryTreeNode> children;
     private boolean isDir;
     private Storage storage;
-
 
     public DirectoryTreeNode() {
         children = new HashMap<>();
@@ -26,6 +26,20 @@ public class DirectoryTreeNode {
         children.put(name, child);
     }
 
+    public DirectoryTreeNode getLastNodeInPath(Path path) {
+        DirectoryTreeNode currentNode = this;
+        Iterator<Path> pathIterator = path.iterator();
+        while (pathIterator.hasNext()) {
+            String childName = pathIterator.next().toString();
+            if (currentNode.getChildren().containsKey(childName)) {
+                currentNode = currentNode.getChildren().get(childName);
+            } else {
+                return null;
+            }
+        }
+        return currentNode;
+    }
+
     private boolean addPath(Iterator<Path> pathIterator, boolean isDir, Storage storage) {
         if (pathIterator.hasNext()) {
             String nodeName = pathIterator.next().toString();
@@ -39,7 +53,7 @@ public class DirectoryTreeNode {
                     currentNode.addChild(nodeName, newNode);
                     if (!pathIterator.hasNext()) {
                         newNode.setIsDir(isDir);
-                        if (!isDir) this.storage = storage;
+                        if (!isDir) newNode.storage = storage;
                         break;
                     }
                     currentNode = newNode;
@@ -57,6 +71,10 @@ public class DirectoryTreeNode {
 
     public HashMap<String, DirectoryTreeNode> getChildren() {
         return children;
+    }
+
+    public Storage getStorage() {
+        return storage;
     }
 
     public boolean isDir() {
