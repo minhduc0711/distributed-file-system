@@ -2,13 +2,12 @@ package naming;
 
 import storage.Storage;
 
-import java.nio.file.Path;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 
 public interface Naming extends Remote {
-    void register(ArrayList<String> pathList, ArrayList<Boolean> isDir, String storageId) throws RemoteException;
+    void register(ArrayList<String> pathList, ArrayList<Boolean> isDir, String storageId, String storageAddress) throws RemoteException;
 
     boolean isDirectory(String path) throws RemoteException;
 

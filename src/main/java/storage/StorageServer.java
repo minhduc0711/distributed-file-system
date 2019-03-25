@@ -1,7 +1,6 @@
 package storage;
 
 import naming.Naming;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -16,14 +15,17 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 
 public class StorageServer implements Storage {
-    private String namingServerIp;
+    private String namingAddress;
+
+    private String storageAddress;
     private String STORAGE_DIR = "localStorage/";
     private Storage storageSkeleton;
     public String storageId;
 
-    public StorageServer(String namingServerIp, int storagePort) {
-        this.namingServerIp = namingServerIp;
-        storageId = "Storage" + storagePort;
+    public StorageServer(String namingAddress, String storageAddress, int storagePort) {
+        this.namingAddress = namingAddress;
+        this.storageAddress = storageAddress;
+        storageId = "Storage " + storageAddress + ":" + storagePort;
         try {
             storageSkeleton = (Storage) UnicastRemoteObject.exportObject(this, storagePort);
             Registry registry = LocateRegistry.getRegistry();
@@ -48,9 +50,9 @@ public class StorageServer implements Storage {
         }
 
         try {
-            Registry registry = LocateRegistry.getRegistry(this.namingServerIp);
+            Registry registry = LocateRegistry.getRegistry(this.namingAddress);
             Naming namingStub = (Naming) registry.lookup("Naming");
-            namingStub.register(pathList, isDirList, storageId);
+            namingStub.register(pathList, isDirList, storageId, this.storageAddress);
         } catch (RemoteException e) {
             e.printStackTrace();
         } catch (NotBoundException e) {
@@ -122,8 +124,7 @@ public class StorageServer implements Storage {
     }
 
     public static void main(String[] args) {
-        final String NAMING_SERVER_IP = null;
-        StorageServer storageServer = new StorageServer(NAMING_SERVER_IP, 11111);
+        StorageServer storageServer = new StorageServer("192.168.1.125", null, 11111);
         storageServer.start();
     }
 }

@@ -5,7 +5,6 @@ import storage.Storage;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.NotBoundException;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -38,11 +37,11 @@ public class NamingServer implements Naming {
     }
 
     @Override
-    public void register(ArrayList<String> pathList, ArrayList<Boolean> isDirList, String storageId) throws RemoteException {
+    public void register(ArrayList<String> pathList, ArrayList<Boolean> isDirList, String storageId, String storageAddress) throws RemoteException {
         assert pathList.size() == isDirList.size();
 
         try {
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.getRegistry(storageAddress);
             Storage storageStub = (Storage) registry.lookup(storageId);
 
             for (int i = 0; i < pathList.size(); i += 1) {
