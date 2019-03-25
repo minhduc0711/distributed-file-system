@@ -1,5 +1,6 @@
 package storage;
 
+import login.Login;
 import naming.Naming;
 import org.apache.commons.io.IOUtils;
 
@@ -51,8 +52,8 @@ public class StorageServer implements Storage {
 
         try {
             Registry registry = LocateRegistry.getRegistry(this.namingAddress);
-            Naming namingStub = (Naming) registry.lookup("Naming");
-            namingStub.register(pathList, isDirList, storageId, this.storageAddress);
+            Login loginStub = (Login) registry.lookup("Login");
+            loginStub.register(pathList, isDirList, storageId, this.storageAddress);
         } catch (RemoteException e) {
             e.printStackTrace();
         } catch (NotBoundException e) {
@@ -62,6 +63,7 @@ public class StorageServer implements Storage {
 
     @Override
     public byte[] read(String path) throws IOException {
+        System.out.println(storageId);
         Path p = Paths.get(path);
         Path localPath = convertToLocalPath(p);
         InputStream inputStream = new FileInputStream(localPath.toString());
@@ -75,7 +77,7 @@ public class StorageServer implements Storage {
 
         File file = new File(localPath.toString());
         try {
-            file.createNewFile();
+//            file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file, true);
             fileOutputStream.write(buffer);
         } catch (IOException e) {
@@ -86,28 +88,6 @@ public class StorageServer implements Storage {
     @Override
     public boolean delete(String path) throws RemoteException {
         return false;
-    }
-
-    @Override
-    public boolean copyTo(String path, Storage storage) throws RemoteException {
-        Path p = Paths.get(path);
-        Path localPath = convertToLocalPath(p);
-        byte[] buffer = new byte[4096];
-
-        try {
-            FileInputStream fileInputStream = new FileInputStream(localPath.toString());
-            while (true) {
-                int numBytesRead = fileInputStream.read(buffer);
-                if (numBytesRead == -1) {
-                    break;
-                }
-            }
-            storage.write(path, buffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
     }
 
     @Override
@@ -124,7 +104,7 @@ public class StorageServer implements Storage {
     }
 
     public static void main(String[] args) {
-        StorageServer storageServer = new StorageServer("192.168.1.125", null, 11111);
+        StorageServer storageServer = new StorageServer("192.168.100.9", null, 11111);
         storageServer.start();
     }
 }

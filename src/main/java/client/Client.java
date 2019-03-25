@@ -1,5 +1,7 @@
 package client;
 
+import login.Login;
+import login.Session;
 import naming.Naming;
 import storage.Storage;
 
@@ -13,6 +15,9 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Scanner;
 
 public class Client {
     static final String NAMING_SERVER_IP = null;
@@ -20,24 +25,42 @@ public class Client {
     public static void main(String[] args) {
         try {
             Registry registry = LocateRegistry.getRegistry(NAMING_SERVER_IP);
-            Naming namingStub = (Naming) registry.lookup("Naming");
+            Login loginStub = (Login) registry.lookup("Login");
+            Session session = loginStub.login();
 
-            // Test read
-//            String p = "slides/notes_on_final.txt";
+            Scanner scanner = new Scanner(System.in);
+
+            ApplicationLoop:
+            while (true) {
+                System.out.print(session.getCurrentDir() + "$ ");
+                String[] inputs = scanner.nextLine().split(" ");
+                switch (inputs[0]) {
+                    case "ls":
+                        System.out.println(Arrays.toString(session.list()));
+                        break;
+                    case "cd":
+                        session.changeDirectory(inputs[1]);
+                        break;
+                    case "cat":
+                        byte[] bytes = session.read(inputs[1]);
+                        System.out.println(new String(bytes, StandardCharsets.UTF_8));
+                        break;
+                    case "q":
+                        break ApplicationLoop;
+                    default:
+                        System.out.println("Invalid command");
+                }
+            }
+            session.logout();
+            // Test write
+//            uploadToServer("/media/minhduc0711/Libraries/Pictures/Wallpapers/799035.jpg", "slides", namingStub);
+
+//            // Test read
+//            String p = "799035.png";
 //
 //            Storage storage = namingStub.getStorage(p);
 //            byte[] ret = storage.read(p);
 //            System.out.println(new String(ret, StandardCharsets.UTF_8));
-
-            // Test write
-            uploadToServer("/home/minhduc0711/grid_random_search.png", "/", namingStub);
-
-           //  Test read
-            String p = "grid_random_search.png";
-
-            Storage storage = namingStub.getStorage(p);
-            byte[] ret = storage.read(p);
-            System.out.println(new String(ret, StandardCharsets.UTF_8));
 
         } catch (Exception e) {
             e.printStackTrace();

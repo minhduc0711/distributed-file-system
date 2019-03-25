@@ -2,6 +2,7 @@ package naming;
 
 import storage.Storage;
 
+import java.io.FileNotFoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ public interface Naming extends Remote {
 
     boolean createDirectory(String path) throws RemoteException;
 
-    Storage getStorage(String path) throws RemoteException;
+    Storage getStorage(String path) throws RemoteException, FileNotFoundException;
 
     void uploadFile(String path, byte[] buffer) throws RemoteException;
 }

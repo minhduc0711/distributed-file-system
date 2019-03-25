@@ -2,6 +2,7 @@ package naming;
 
 import storage.Storage;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.NotBoundException;
@@ -16,12 +17,12 @@ import java.util.Random;
 public class NamingServer implements Naming {
     private static final int NUM_REPLICAS = 1;
 
-    DirectoryTreeNode rootNode;
     Naming namingSkeleton;
     ArrayList<Storage> connectedStorages;
+    public DirectoryTreeNode rootNode;
 
     public NamingServer() {
-        rootNode = new DirectoryTreeNode();
+        rootNode = new DirectoryTreeNode("/");
         connectedStorages = new ArrayList<>();
     }
 
@@ -46,11 +47,11 @@ public class NamingServer implements Naming {
 
             for (int i = 0; i < pathList.size(); i += 1) {
                 Path p = Paths.get(pathList.get(i));
-                DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
-                if (fileNode == null) {
+                DirectoryTreeNode node = rootNode.getLastNodeInPath(p);
+                if (node == null) {
                     rootNode.addPath(p, isDirList.get(i), storageStub);
-                } else {
-                    fileNode.getStorageList().add(storageStub);
+                } else if (!isDirList.get(i)) {
+                    node.getStorageList().add(storageStub);
                 }
             }
             System.out.println(storageStub.getId() + " registered successfully!");
@@ -61,12 +62,14 @@ public class NamingServer implements Naming {
     }
 
     @Override
-    public Storage getStorage(String path) throws RemoteException {
-        System.out.println(path);
-
+    public Storage getStorage(String path) throws RemoteException, FileNotFoundException {
         Path p = Paths.get(path);
         DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
+        if (fileNode == null) {
+            throw new FileNotFoundException();
+        }
         List<Storage> storageList = fileNode.getStorageList();
+
         for (Storage storage : storageList) {
             try {
                 storage.alive();
@@ -102,22 +105,28 @@ public class NamingServer implements Naming {
             } else {
                 fileNode.getStorageList().add(storage);
             }
-            storage.write(path, buffer);
+            try {
+                storage.write(path, buffer);
+            } catch (RemoteException e) {
+                continue;
+            }
         }
     }
 
     @Override
     public boolean isDirectory(String path) throws RemoteException {
-        return false;
+        Path p = Paths.get(path);
+        return rootNode.getLastNodeInPath(p).isDir();
     }
 
     @Override
     public boolean createDirectory(String path) throws RemoteException {
-        return false;
+        Path p = Paths.get(path);
+        return rootNode.addPath(p, true, null);
     }
 
-    public static void main(String[] args) {
-        NamingServer namingServer = new NamingServer();
-        namingServer.start();
-    }
+//    public static void main(String[] args) {
+//        NamingServer namingServer = new NamingServer();
+//        namingServer.start();
+//    }
 }
