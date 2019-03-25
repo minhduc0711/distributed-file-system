@@ -16,14 +16,16 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 
 public class StorageServer implements Storage {
+    private String namingServerIp;
     private String STORAGE_DIR = "localStorage/";
     private Storage storageSkeleton;
     public String storageId;
 
-    public StorageServer(int portNumber) {
-        storageId = "Storage" + portNumber;
+    public StorageServer(String namingServerIp, int storagePort) {
+        this.namingServerIp = namingServerIp;
+        storageId = "Storage" + storagePort;
         try {
-            storageSkeleton = (Storage) UnicastRemoteObject.exportObject(this, portNumber);
+            storageSkeleton = (Storage) UnicastRemoteObject.exportObject(this, storagePort);
             Registry registry = LocateRegistry.getRegistry();
             registry.rebind(storageId, storageSkeleton);
         } catch (RemoteException e) {
@@ -46,7 +48,7 @@ public class StorageServer implements Storage {
         }
 
         try {
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.getRegistry(this.namingServerIp);
             Naming namingStub = (Naming) registry.lookup("Naming");
             namingStub.register(pathList, isDirList, storageId);
         } catch (RemoteException e) {
@@ -80,8 +82,39 @@ public class StorageServer implements Storage {
     }
 
     @Override
+    public boolean delete(String path) throws RemoteException {
+        return false;
+    }
+
+    @Override
+    public boolean copyTo(String path, Storage storage) throws RemoteException {
+        Path p = Paths.get(path);
+        Path localPath = convertToLocalPath(p);
+        byte[] buffer = new byte[4096];
+
+        try {
+            FileInputStream fileInputStream = new FileInputStream(localPath.toString());
+            while (true) {
+                int numBytesRead = fileInputStream.read(buffer);
+                if (numBytesRead == -1) {
+                    break;
+                }
+            }
+            storage.write(path, buffer);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public String getId() throws RemoteException {
         return storageId;
+    }
+
+    @Override
+    public void alive() throws RemoteException {
     }
 
     private Path convertToLocalPath(Path remotePath) {
@@ -89,7 +122,8 @@ public class StorageServer implements Storage {
     }
 
     public static void main(String[] args) {
-        StorageServer storageServer = new StorageServer(11111);
+        final String NAMING_SERVER_IP = null;
+        StorageServer storageServer = new StorageServer(NAMING_SERVER_IP, 11111);
         storageServer.start();
     }
 }

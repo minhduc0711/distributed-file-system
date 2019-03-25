@@ -10,5 +10,11 @@ public interface Storage extends Remote, Serializable {
 
     void write(String path, byte[] buffer) throws RemoteException;
 
+    boolean delete(String path) throws RemoteException;
+
+    boolean copyTo(String path, Storage storage) throws RemoteException;
+
+    void alive() throws RemoteException;
+
     String getId() throws RemoteException;
 }

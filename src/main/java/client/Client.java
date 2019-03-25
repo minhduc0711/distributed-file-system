@@ -15,9 +15,11 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class Client {
+    static final String NAMING_SERVER_IP = null;
+
     public static void main(String[] args) {
         try {
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.getRegistry(NAMING_SERVER_IP);
             Naming namingStub = (Naming) registry.lookup("Naming");
 
             // Test read

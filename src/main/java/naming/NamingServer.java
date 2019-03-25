@@ -11,9 +11,12 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
-public class NamingServer implements Naming, Remote {
+public class NamingServer implements Naming {
+    private static final int NUM_REPLICAS = 1;
+
     DirectoryTreeNode rootNode;
     Naming namingSkeleton;
     ArrayList<Storage> connectedStorages;
@@ -44,7 +47,12 @@ public class NamingServer implements Naming, Remote {
 
             for (int i = 0; i < pathList.size(); i += 1) {
                 Path p = Paths.get(pathList.get(i));
-                rootNode.addPath(p, isDirList.get(i), storageStub);
+                DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
+                if (fileNode == null) {
+                    rootNode.addPath(p, isDirList.get(i), storageStub);
+                } else {
+                    fileNode.getStorageList().add(storageStub);
+                }
             }
             System.out.println(storageStub.getId() + " registered successfully!");
             connectedStorages.add(storageStub);
@@ -54,22 +62,49 @@ public class NamingServer implements Naming, Remote {
     }
 
     @Override
-    public Storage getStorage(String path) throws RemoteException{
+    public Storage getStorage(String path) throws RemoteException {
         System.out.println(path);
 
         Path p = Paths.get(path);
         DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
-        return fileNode.getStorage();
+        List<Storage> storageList = fileNode.getStorageList();
+        for (Storage storage : storageList) {
+            try {
+                storage.alive();
+                return storage;
+            } catch (RemoteException e) {
+                continue;
+            }
+        }
+        return null;
     }
 
     @Override
     public void uploadFile(String path, byte[] buffer) throws RemoteException {
         Path p = Paths.get(path);
-        if (rootNode.getLastNodeInPath(p) == null) {
-            createFile(path);
+
+        if (connectedStorages.size() < NUM_REPLICAS) {
+            throw new IllegalStateException("Not enough servers are running to replicate");
         }
-        Storage storageStub = getStorage(path);
-        storageStub.write(path, buffer);
+
+        List<Storage> luckyStorages = new ArrayList<>();
+        while (luckyStorages.size() < NUM_REPLICAS) {
+            int randomId = new Random().nextInt(connectedStorages.size());
+            Storage storage = connectedStorages.get(randomId);
+            if (!luckyStorages.contains(storage)) {
+                luckyStorages.add(storage);
+            }
+        }
+
+        for (Storage storage : luckyStorages) {
+            DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
+            if (fileNode == null) {
+                rootNode.addPath(p, false, storage);
+            } else {
+                fileNode.getStorageList().add(storage);
+            }
+            storage.write(path, buffer);
+        }
     }
 
     @Override
@@ -80,15 +115,6 @@ public class NamingServer implements Naming, Remote {
     @Override
     public boolean createDirectory(String path) throws RemoteException {
         return false;
-    }
-
-    @Override
-    public boolean createFile(String path) throws RemoteException {
-        Path p = Paths.get(path);
-
-        int randomId = new Random().nextInt(connectedStorages.size());
-        Storage luckyStorageServer = connectedStorages.get(randomId);
-        return rootNode.addPath(p, false, luckyStorageServer);
     }
 
     public static void main(String[] args) {

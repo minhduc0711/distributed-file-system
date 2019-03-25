@@ -14,8 +14,6 @@ public interface Naming extends Remote {
 
     boolean createDirectory(String path) throws RemoteException;
 
-    boolean createFile(String path) throws RemoteException;
-
     Storage getStorage(String path) throws RemoteException;
 
     void uploadFile(String path, byte[] buffer) throws RemoteException;
