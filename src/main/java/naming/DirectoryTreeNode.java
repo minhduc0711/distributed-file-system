@@ -4,7 +4,10 @@ import storage.Storage;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 public class DirectoryTreeNode {
     private HashMap<String, DirectoryTreeNode> children;
@@ -83,6 +86,10 @@ public class DirectoryTreeNode {
 
     public List<Storage> getStorageList() {
         return storageList;
+    }
+
+    public DirectoryTreeNode getParent() {
+        return parent;
     }
 
     public boolean isDir() {

@@ -1,15 +1,12 @@
 package login;
 
 import naming.DirectoryTreeNode;
-import naming.Naming;
 import naming.NamingServer;
 import storage.Storage;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.rmi.NoSuchObjectException;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.server.Unreferenced;
@@ -27,14 +24,18 @@ public class SessionImpl extends UnicastRemoteObject implements Session, Unrefer
     @Override
     public void changeDirectory(String path) throws RemoteException {
         String[] nodeNames = path.split("/");
+        DirectoryTreeNode temp = currentNode;
         for (int i = 0; i < nodeNames.length; i += 1) {
-            if (currentNode.getChildren().containsKey(nodeNames[i])) {
-                currentNode = currentNode.getChildren().get(nodeNames[i]);
+            if ((nodeNames[i].equals("..")) && (temp.getParent() != null)) {
+                temp = temp.getParent();
+            }
+            else if (temp.getChildren().containsKey(nodeNames[i])) {
+                temp = temp.getChildren().get(nodeNames[i]);
             } else {
                 throw new IllegalArgumentException();
             }
         }
-        System.out.println(currentNode.toString());
+        currentNode = temp;
     }
 
     @Override
@@ -54,8 +55,18 @@ public class SessionImpl extends UnicastRemoteObject implements Session, Unrefer
         return storage.read(fullPath);
     }
 
-    public void logout() throws RemoteException
-    {
+    @Override
+    public void delete(String path) throws RemoteException {
+        String fullPath = Paths.get(currentNode.toString(), path).toString();
+        namingServer.delete(fullPath);
+    }
+
+    @Override
+    public void uploadFile(String path, byte[] buffer) throws RemoteException {
+        namingServer.uploadFile(path, buffer);
+    }
+
+    public void logout() throws RemoteException {
         unexportObject(this, true);
     }
 

@@ -1,6 +1,5 @@
 package login;
 
-import naming.Naming;
 import naming.NamingServer;
 
 import java.rmi.RemoteException;
@@ -14,7 +13,7 @@ public class LoginImpl implements Login {
 
     @Override
     public Session login() throws RemoteException {
-        return new SessionImpl(namingServer); // or whatever
+        return new SessionImpl(namingServer);
     }
 
     @Override

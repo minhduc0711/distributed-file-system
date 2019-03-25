@@ -1,7 +1,6 @@
 package storage;
 
 import login.Login;
-import naming.Naming;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -77,7 +76,6 @@ public class StorageServer implements Storage {
 
         File file = new File(localPath.toString());
         try {
-//            file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file, true);
             fileOutputStream.write(buffer);
         } catch (IOException e) {
@@ -87,16 +85,15 @@ public class StorageServer implements Storage {
 
     @Override
     public boolean delete(String path) throws RemoteException {
-        return false;
+        Path p = Paths.get(path);
+        Path localPath = convertToLocalPath(p);
+        File file = new File(localPath.toString());
+        return file.delete();
     }
 
     @Override
     public String getId() throws RemoteException {
         return storageId;
-    }
-
-    @Override
-    public void alive() throws RemoteException {
     }
 
     private Path convertToLocalPath(Path remotePath) {

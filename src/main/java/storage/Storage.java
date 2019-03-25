@@ -12,8 +12,5 @@ public interface Storage extends Remote, Serializable {
 
     boolean delete(String path) throws RemoteException;
 
-
-    void alive() throws RemoteException;
-
     String getId() throws RemoteException;
 }

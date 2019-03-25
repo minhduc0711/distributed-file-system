@@ -9,10 +9,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class NamingServer implements Naming {
     private static final int NUM_REPLICAS = 1;
@@ -24,17 +21,6 @@ public class NamingServer implements Naming {
     public NamingServer() {
         rootNode = new DirectoryTreeNode("/");
         connectedStorages = new ArrayList<>();
-    }
-
-    public void start() {
-        try {
-            namingSkeleton = (Naming) UnicastRemoteObject.exportObject(this, 54321);
-            Registry registry = LocateRegistry.getRegistry();
-            registry.rebind("Naming", namingSkeleton);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-        System.out.println("Naming server is running...");
     }
 
     @Override
@@ -72,7 +58,7 @@ public class NamingServer implements Naming {
 
         for (Storage storage : storageList) {
             try {
-                storage.alive();
+                storage.getId();
                 return storage;
             } catch (RemoteException e) {
                 continue;
@@ -84,6 +70,10 @@ public class NamingServer implements Naming {
     @Override
     public void uploadFile(String path, byte[] buffer) throws RemoteException {
         Path p = Paths.get(path);
+
+        // Delete if file exists
+        DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
+        if (fileNode != null) delete(path);
 
         if (connectedStorages.size() < NUM_REPLICAS) {
             throw new IllegalStateException("Not enough servers are running to replicate");
@@ -99,7 +89,7 @@ public class NamingServer implements Naming {
         }
 
         for (Storage storage : luckyStorages) {
-            DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
+            fileNode = rootNode.getLastNodeInPath(p);
             if (fileNode == null) {
                 rootNode.addPath(p, false, storage);
             } else {
@@ -109,6 +99,25 @@ public class NamingServer implements Naming {
                 storage.write(path, buffer);
             } catch (RemoteException e) {
                 continue;
+            }
+        }
+    }
+
+    public void delete(String path) throws RemoteException {
+        Path p = Paths.get(path);
+        DirectoryTreeNode node = rootNode.getLastNodeInPath(p);
+        if ((node == null) || (node.toString().equals("/"))) {
+            throw new IllegalArgumentException();
+        } else if (node.isDir()) {
+            Iterator<Map.Entry<String, DirectoryTreeNode>> it = node.getChildren().entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, DirectoryTreeNode> entry = it.next();
+                delete(entry.getValue().toString());
+                it.remove();
+            }
+        } else {
+            for (Storage storage : node.getStorageList()) {
+                storage.delete(node.toString());
             }
         }
     }
