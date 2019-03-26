@@ -8,7 +8,9 @@ import java.rmi.RemoteException;
 public interface Storage extends Remote, Serializable {
     byte[] read(String path) throws IOException;
 
-    void write(String path, byte[] buffer) throws RemoteException;
+    boolean createDirectory(String path) throws RemoteException;
+
+    void write(String path, byte[] buffer, int numBytesRead) throws RemoteException;
 
     boolean delete(String path) throws RemoteException;
 

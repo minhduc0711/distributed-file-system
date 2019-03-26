@@ -62,8 +62,13 @@ public class SessionImpl extends UnicastRemoteObject implements Session, Unrefer
     }
 
     @Override
-    public void uploadFile(String path, byte[] buffer) throws RemoteException {
-        namingServer.uploadFile(path, buffer);
+    public void uploadFile(String path, byte[] buffer, int numBytesRead) throws RemoteException {
+        namingServer.uploadFile(path, buffer, numBytesRead);
+    }
+
+    @Override
+    public boolean createDirectory(String path) throws RemoteException {
+        return namingServer.createDirectory(path);
     }
 
     public void logout() throws RemoteException {
@@ -73,7 +78,7 @@ public class SessionImpl extends UnicastRemoteObject implements Session, Unrefer
     public void unreferenced()
     {
         try {
-            unexportObject(this, true); // needs to be in a try/catch block of course
+            unexportObject(this, true);
         } catch (NoSuchObjectException e) {
             e.printStackTrace();
         }

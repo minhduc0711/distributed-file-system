@@ -68,16 +68,16 @@ public class NamingServer implements Naming {
     }
 
     @Override
-    public void uploadFile(String path, byte[] buffer) throws RemoteException {
+    public synchronized void uploadFile(String path, byte[] buffer, int numBytesRead) throws RemoteException {
         Path p = Paths.get(path);
 
         // Delete if file exists
-        DirectoryTreeNode fileNode = rootNode.getLastNodeInPath(p);
-        if (fileNode != null) delete(path);
+        DirectoryTreeNode fileNode;
+//        if (fileNode != null) delete(path);
 
-        if (connectedStorages.size() < NUM_REPLICAS) {
-            throw new IllegalStateException("Not enough servers are running to replicate");
-        }
+//        if (connectedStorages.size() < NUM_REPLICAS) {
+//            throw new IllegalStateException("Not enough servers are running to replicate");
+//        }
 
         List<Storage> luckyStorages = new ArrayList<>();
         while (luckyStorages.size() < NUM_REPLICAS) {
@@ -96,7 +96,7 @@ public class NamingServer implements Naming {
                 fileNode.getStorageList().add(storage);
             }
             try {
-                storage.write(path, buffer);
+                storage.write(path, buffer, numBytesRead);
             } catch (RemoteException e) {
                 continue;
             }
@@ -130,8 +130,14 @@ public class NamingServer implements Naming {
 
     @Override
     public boolean createDirectory(String path) throws RemoteException {
+        boolean ret = true;
         Path p = Paths.get(path);
-        return rootNode.addPath(p, true, null);
+        for (Storage storage : connectedStorages) {
+            if (!storage.createDirectory(path)) {
+                ret = false;
+            }
+        }
+        return (ret && rootNode.addPath(p, true, null));
     }
 
 //    public static void main(String[] args) {

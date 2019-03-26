@@ -80,6 +80,13 @@ public class Client {
                     }
                     session.delete(inputs[1]);
                     break;
+                case "mkdir":
+                    if (inputs.length < 2) {
+                        System.out.println("Please specify a path");
+                        break;
+                    }
+                    session.createDirectory(inputs[1]);
+                    break;
                 case "q":
                     break ApplicationLoop;
                 default:
@@ -100,8 +107,9 @@ public class Client {
                 if (numBytesRead == -1) {
                     break;
                 }
-                session.uploadFile(pServer.toString(), buffer);
+                session.uploadFile(pServer.toString(), buffer, numBytesRead);
             }
+            fileInputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

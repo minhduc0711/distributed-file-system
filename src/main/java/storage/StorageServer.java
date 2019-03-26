@@ -70,14 +70,28 @@ public class StorageServer implements Storage {
     }
 
     @Override
-    public void write(String path, byte[] buffer) throws RemoteException {
+    public boolean createDirectory(String path) throws RemoteException {
         Path p = Paths.get(path);
+        Path localPath = convertToLocalPath(p);
+
+        File dir = new File(localPath.toString());
+        if (!dir.exists()) {
+            return dir.mkdirs();
+        }
+        return false;
+    }
+
+    @Override
+    public synchronized void write(String path, byte[] buffer, int numBytesRead) throws RemoteException {
+        Path p = Paths.get(path);
+        createDirectory(p.getParent().toString());
         Path localPath = convertToLocalPath(p);
 
         File file = new File(localPath.toString());
         try {
             FileOutputStream fileOutputStream = new FileOutputStream(file, true);
-            fileOutputStream.write(buffer);
+            fileOutputStream.write(buffer, 0, numBytesRead);
+            fileOutputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -101,7 +115,7 @@ public class StorageServer implements Storage {
     }
 
     public static void main(String[] args) {
-        StorageServer storageServer = new StorageServer("192.168.100.9", null, 11111);
+        StorageServer storageServer = new StorageServer("192.168.10.103", null, 11111);
         storageServer.start();
     }
 }

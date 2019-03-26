@@ -22,6 +22,7 @@ public class LoginImpl implements Login {
     }
 
     public static void main(String[] args) {
+        System.setProperty("java.rmi.server.hostname","192.168.10.103");
         Login login = new LoginImpl();
         try {
             Login skeleton = (Login) UnicastRemoteObject.exportObject(login, 54321);

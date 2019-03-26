@@ -13,9 +13,11 @@ public interface Session extends Remote {
 
     byte[] read(String path) throws IOException;
 
-    void uploadFile(String path, byte[] buffer) throws RemoteException;
-
     void delete(String path) throws RemoteException;
+
+    void uploadFile(String path, byte[] buffer, int numBytesRead) throws RemoteException;
+
+    boolean createDirectory(String path) throws RemoteException;
 
     void logout() throws RemoteException;
 }
